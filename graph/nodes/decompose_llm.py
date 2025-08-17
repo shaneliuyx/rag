@@ -1,8 +1,7 @@
 from __future__ import annotations
 from typing import List, Dict, Any
 import json
-from models.llm_ollama import OllamaGenerator
-from models.llm_gemma import GemmaGenerator
+from models.llm_provider import get_llm_generator
 
 
 DECOMPOSE_PROMPT = """
@@ -24,10 +23,7 @@ class LLMDecomposer:
     def _generator(self):
         if self.gen is not None:
             return self.gen
-        if getattr(self.settings, "use_ollama", False):
-            self.gen = OllamaGenerator(model=getattr(self.settings, "ollama_model", "gemma3:270m"))
-        else:
-            self.gen = GemmaGenerator()
+        self.gen = get_llm_generator(self.settings)
         return self.gen
 
     def __call__(self, query: str) -> List[Dict[str, Any]]:

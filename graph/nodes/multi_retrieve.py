@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import List, Dict, Any, Tuple
 import re
 from index.chroma_store import ChromaStore
+from typing import Optional
 
 
 STOPWORDS = set(
@@ -38,6 +39,15 @@ class MultiRetrieveNode:
     def __init__(self, store: ChromaStore, n_results: int = 50) -> None:
         self.store = store
         self.n_results = n_results
+        self.kb_store = None
+        try:
+            from config.settings import settings
+            if getattr(settings, "use_bedrock_kb", False) and getattr(settings, "bedrock_kb_id", ""):
+                from index.bedrock_kb_store import BedrockKBStore
+                self.kb_store = BedrockKBStore(knowledge_base_id=settings.bedrock_kb_id, region=getattr(settings, "bedrock_region", None))
+        except Exception:
+            # Optional dependency missing or misconfigured; ignore to keep local path working
+            self.kb_store = None
 
     def __call__(self, query: str) -> List[Dict[str, Any]]:
         vars = _variants(query)
@@ -48,6 +58,14 @@ class MultiRetrieveNode:
             key = f"v{i}"
             res_pairs.append((key, res))
             res_cache[key] = res
+        # Optional: add Bedrock KB results for original query only
+        if self.kb_store is not None:
+            try:
+                kb_res = self.kb_store.query(query_texts=[vars[0]], n_results=self.n_results)
+                res_pairs.append(("kb", kb_res))
+                res_cache["kb"] = kb_res
+            except Exception:
+                pass
         fused = _rrf_merge(res_pairs)
         # build hit objects using the first variant's docs/metas fallback
         # We'll map id to its text/meta by scanning variant results until found

@@ -1,8 +1,7 @@
 from __future__ import annotations
 from typing import List, Dict, Any
 import re
-from models.llm_gemma import GemmaGenerator
-from models.llm_ollama import OllamaGenerator
+from models.llm_provider import get_llm_generator
 
 
 ANSWER_PROMPT = """You are a helpful assistant. Using only the provided context, answer the user question.
@@ -64,17 +63,15 @@ class SynthesizeNode:
         if not settings.enable_generation:
             return {"answer": "[generation disabled; set RAG_MCP_ENABLE_GENERATION=1 to enable]"}
         if self.gen is None:
-            if getattr(settings, "use_ollama", False):
-                self.gen = OllamaGenerator(model=getattr(settings, "ollama_model", "gemma3:270m"))
-            else:
-                self.gen = GemmaGenerator()
+            self.gen = get_llm_generator(settings)
         prompt = ANSWER_PROMPT.format(question=question, contexts=_format_context(hits))
         text = self.gen.generate(prompt)
         # Post-process: enforce bullets and attach cites/quotes
         raw_bullets = _extract_bullets(text, getattr(settings, "summary_bullets_max", 5))
         bullets = [f"- {b}" for b in raw_bullets] if raw_bullets else [ln if ln.startswith("-") else f"- {ln}" for ln in (ln for ln in text.splitlines() if ln.strip())]
         out = []
-        vocab = set(_keywords(question)) if callable(globals().get('_keywords')) else set()
+        # optional keyword filter if _keywords exists in scope
+        vocab = set(globals().get('_keywords')(question)) if callable(globals().get('_keywords')) else set()
         for idx, b in enumerate(bullets[: getattr(settings, "summary_bullets_max", 5)], start=1):
             # attach cite if missing
             # normalize malformed cites like [#{1}] -> [#1]

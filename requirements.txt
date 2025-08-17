@@ -12,3 +12,4 @@ tiktoken==0.7.0
 fastmcp==0.4.1
 uvicorn==0.30.1
 ollama==0.3.3
+boto3==1.34.158

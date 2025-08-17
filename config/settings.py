@@ -21,4 +21,13 @@ class Settings:
     max_regen_attempts: int = int(os.environ.get("RAG_MCP_MAX_REGEN", 1))
     max_rewrite_attempts: int = int(os.environ.get("RAG_MCP_MAX_REWRITE", 2))
 
+    # v2: provider & bedrock hybrid
+    llm_provider: str = os.environ.get("RAG_MCP_LLM_PROVIDER", "").strip().lower()
+    bedrock_model_id: str = os.environ.get("RAG_MCP_BEDROCK_MODEL_ID", "")
+    bedrock_region: str = os.environ.get("RAG_MCP_BEDROCK_REGION", "")
+    use_bedrock_kb: bool = os.environ.get("RAG_MCP_USE_BEDROCK_KB", "0") == "1"
+    bedrock_kb_id: str = os.environ.get("RAG_MCP_BEDROCK_KB_ID", "")
+    use_bedrock_rerank: bool = os.environ.get("RAG_MCP_USE_BEDROCK_RERANK", "0") == "1"
+    bedrock_rerank_model_id: str = os.environ.get("RAG_MCP_BEDROCK_RERANK_MODEL_ID", "")
+
 settings = Settings()
