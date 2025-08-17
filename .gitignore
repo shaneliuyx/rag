@@ -1,0 +1,7 @@
+# Ignore local artifacts
+__pycache__/
+.chroma/
+models/gemma3-270m/
+mcp_server.log
+mcp_server.out
+*.pyc
