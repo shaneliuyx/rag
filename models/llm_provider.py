@@ -17,7 +17,8 @@ def get_llm_generator(settings) -> LLMGeneratorProtocol:
         from models.llm_bedrock import BedrockGenerator
         model_id = getattr(settings, "bedrock_model_id", None) or getattr(settings, "llm_model", None)
         region = getattr(settings, "bedrock_region", None)
-        return BedrockGenerator(model_id=model_id, region=region)
+        profile = getattr(settings, "aws_profile", None)
+        return BedrockGenerator(model_id=model_id, region=region, profile=profile)
     # fallback to existing behavior
     if getattr(settings, "use_ollama", False):
         from models.llm_ollama import OllamaGenerator

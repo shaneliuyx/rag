@@ -44,7 +44,11 @@ class MultiRetrieveNode:
             from config.settings import settings
             if getattr(settings, "use_bedrock_kb", False) and getattr(settings, "bedrock_kb_id", ""):
                 from index.bedrock_kb_store import BedrockKBStore
-                self.kb_store = BedrockKBStore(knowledge_base_id=settings.bedrock_kb_id, region=getattr(settings, "bedrock_region", None))
+                self.kb_store = BedrockKBStore(
+                    knowledge_base_id=settings.bedrock_kb_id,
+                    region=getattr(settings, "bedrock_region", None),
+                    profile=getattr(settings, "aws_profile", None),
+                )
         except Exception:
             # Optional dependency missing or misconfigured; ignore to keep local path working
             self.kb_store = None

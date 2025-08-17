@@ -25,6 +25,7 @@ class Settings:
     llm_provider: str = os.environ.get("RAG_MCP_LLM_PROVIDER", "").strip().lower()
     bedrock_model_id: str = os.environ.get("RAG_MCP_BEDROCK_MODEL_ID", "")
     bedrock_region: str = os.environ.get("RAG_MCP_BEDROCK_REGION", "")
+    aws_profile: str = os.environ.get("RAG_MCP_AWS_PROFILE", os.environ.get("AWS_PROFILE", ""))
     use_bedrock_kb: bool = os.environ.get("RAG_MCP_USE_BEDROCK_KB", "0") == "1"
     bedrock_kb_id: str = os.environ.get("RAG_MCP_BEDROCK_KB_ID", "")
     use_bedrock_rerank: bool = os.environ.get("RAG_MCP_USE_BEDROCK_RERANK", "0") == "1"

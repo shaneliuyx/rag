@@ -3,10 +3,14 @@ from typing import List, Dict, Any, Tuple
 
 
 class BedrockKBStore:
-    def __init__(self, knowledge_base_id: str, region: str | None = None) -> None:
+    def __init__(self, knowledge_base_id: str, region: str | None = None, profile: str | None = None) -> None:
         import boto3  # type: ignore  # lazy import
         self.kb_id = knowledge_base_id
-        self.client = boto3.client("bedrock-agent-runtime", region_name=region) if region else boto3.client("bedrock-agent-runtime")
+        if profile:
+            session = boto3.Session(profile_name=profile, region_name=region)
+            self.client = session.client("bedrock-agent-runtime")
+        else:
+            self.client = boto3.client("bedrock-agent-runtime", region_name=region) if region else boto3.client("bedrock-agent-runtime")
 
     def query(self, query_texts: List[str], n_results: int = 50) -> Dict[str, List[List[str]]]:
         # Align to Chroma-like return shape: {ids: [[...]], documents: [[...]], metadatas: [[...]]}
