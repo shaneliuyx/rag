@@ -35,5 +35,9 @@ class Settings:
     s3_bucket: str = os.environ.get("RAG_MCP_S3_BUCKET", "")
     s3_prefix: str = os.environ.get("RAG_MCP_S3_PREFIX", "rag/ingest")
     enable_bedrock_kb_ingest: bool = os.environ.get("RAG_MCP_ENABLE_BEDROCK_KB_INGEST", "1") == "1"
+    # v2 graders & dynamics
+    enable_retrieval_grader: bool = os.environ.get("RAG_MCP_ENABLE_RETRIEVAL_GRADER", "1") == "1"
+    enable_hallucination_grader: bool = os.environ.get("RAG_MCP_ENABLE_HALLUCINATION_GRADER", "1") == "1"
+    enable_answer_grader: bool = os.environ.get("RAG_MCP_ENABLE_ANSWER_GRADER", "1") == "1"
 
 settings = Settings()

@@ -4,6 +4,7 @@ import os
 import glob
 import hashlib
 from datetime import datetime
+import tiktoken  # type: ignore
 import uuid
 
 from bs4 import BeautifulSoup  # type: ignore
@@ -81,6 +82,24 @@ def _chunk_text(text: str, target_chars: int = 600, overlap: int = 150) -> List[
     return chunks
 
 
+def _chunk_text_tokens(text: str, target_tokens: int = 384, overlap_tokens: int = 96, model: str = "gpt-4o-mini") -> List[str]:
+    text = text.strip()
+    if not text:
+        return []
+    enc = tiktoken.get_encoding("cl100k_base")
+    toks = enc.encode(text)
+    out: List[str] = []
+    i = 0
+    step = max(1, target_tokens - overlap_tokens)
+    while i < len(toks):
+        seg = toks[i : i + target_tokens]
+        out.append(enc.decode(seg))
+        if len(seg) < target_tokens:
+            break
+        i += step
+    return out
+
+
 def discover_files(paths: List[str]) -> List[str]:
     discovered: List[str] = []
     for p in paths:
@@ -118,7 +137,16 @@ def load_and_chunk(paths: List[str], tags: List[str] | None = None) -> Tuple[Lis
 
     for fp in files:
         raw = _read_file_text(fp)
-        chunks = _chunk_text(raw)
+        from config.settings import settings
+        if getattr(settings, "RAG_MCP_CHUNK_TOKENS", None):
+            try:
+                target = int(getattr(settings, "RAG_MCP_CHUNK_TOKENS", 384))
+                overlap_t = int(getattr(settings, "RAG_MCP_CHUNK_OVERLAP", 96))
+                chunks = _chunk_text_tokens(raw, target_tokens=target, overlap_tokens=overlap_t)
+            except Exception:
+                chunks = _chunk_text(raw)
+        else:
+            chunks = _chunk_text(raw)
         base_id = os.path.abspath(fp)
         for idx, ch in enumerate(chunks):
             checksum = hashlib.md5(ch.encode("utf-8")).hexdigest()
