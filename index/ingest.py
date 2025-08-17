@@ -4,6 +4,7 @@ import os
 import glob
 import hashlib
 from datetime import datetime
+import uuid
 
 from bs4 import BeautifulSoup  # type: ignore
 from pypdf import PdfReader  # type: ignore
@@ -133,3 +134,34 @@ def load_and_chunk(paths: List[str], tags: List[str] | None = None) -> Tuple[Lis
                 "ingested_at": now,
             })
     return ids, texts, metas
+
+
+def ingest_to_bedrock_kb(ids: List[str], texts: List[str], metas: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Upload chunks to S3 and trigger Bedrock KB ingestion job if configured.
+    Returns a summary dict; no exception if not configured.
+    """
+    try:
+        from config.settings import settings
+        if not getattr(settings, "use_bedrock_kb", False):
+            return {"status": "skipped", "reason": "bedrock_kb_disabled"}
+        if not (settings.s3_bucket and settings.bedrock_kb_id and settings.bedrock_kb_ds_id):
+            return {"status": "skipped", "reason": "missing_config"}
+        import boto3  # type: ignore
+        session = boto3.Session(profile_name=getattr(settings, "aws_profile", None) or None, region_name=getattr(settings, "bedrock_region", None) or None)
+        s3 = session.client("s3")
+        uploaded = 0
+        ts = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+        base_prefix = settings.s3_prefix.strip("/")
+        for i, text in enumerate(texts):
+            key = f"{base_prefix}/{ts}/{uuid.uuid4().hex}.txt"
+            meta = metas[i] if i < len(metas) else {}
+            s3.put_object(Bucket=settings.s3_bucket, Key=key, Body=text.encode("utf-8"))
+            uploaded += 1
+        if getattr(settings, "enable_bedrock_kb_ingest", True):
+            bac = session.client("bedrock-agent", region_name=getattr(settings, "bedrock_region", None) or None)
+            resp = bac.start_ingestion_job(knowledgeBaseId=settings.bedrock_kb_id, dataSourceId=settings.bedrock_kb_ds_id)
+            job = resp.get("ingestionJob", {})
+            return {"status": "ok", "uploaded": uploaded, "ingestion_job": job}
+        return {"status": "ok", "uploaded": uploaded}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}

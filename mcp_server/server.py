@@ -11,7 +11,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from index.chroma_store import ChromaStore
-from index.ingest import load_and_chunk
+from index.ingest import load_and_chunk, ingest_to_bedrock_kb
 from models.rerank_bge import rerank
 from graph.builder import GraphPipeline
 from config.settings import settings
@@ -71,7 +71,8 @@ def rag_ingest(req: Dict[str, Any]) -> Dict[str, Any]:
         metas.extend(file_metas)
 
     added = store.add_chunks(ids=ids, texts=docs, metadatas=metas)
-    return {"added": added, "collection_size": store.count()}
+    kb = ingest_to_bedrock_kb(ids, docs, metas)
+    return {"added": added, "collection_size": store.count(), "bedrock_kb": kb}
 
 @mcp.tool()
 def rag_query(req: Dict[str, Any]) -> Dict[str, Any]:

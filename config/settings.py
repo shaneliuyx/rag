@@ -28,7 +28,12 @@ class Settings:
     aws_profile: str = os.environ.get("RAG_MCP_AWS_PROFILE", os.environ.get("AWS_PROFILE", ""))
     use_bedrock_kb: bool = os.environ.get("RAG_MCP_USE_BEDROCK_KB", "0") == "1"
     bedrock_kb_id: str = os.environ.get("RAG_MCP_BEDROCK_KB_ID", "")
+    bedrock_kb_ds_id: str = os.environ.get("RAG_MCP_BEDROCK_KB_DS_ID", "")
     use_bedrock_rerank: bool = os.environ.get("RAG_MCP_USE_BEDROCK_RERANK", "0") == "1"
     bedrock_rerank_model_id: str = os.environ.get("RAG_MCP_BEDROCK_RERANK_MODEL_ID", "")
+    # optional S3-backed ingest for Bedrock KB
+    s3_bucket: str = os.environ.get("RAG_MCP_S3_BUCKET", "")
+    s3_prefix: str = os.environ.get("RAG_MCP_S3_PREFIX", "rag/ingest")
+    enable_bedrock_kb_ingest: bool = os.environ.get("RAG_MCP_ENABLE_BEDROCK_KB_INGEST", "1") == "1"
 
 settings = Settings()
