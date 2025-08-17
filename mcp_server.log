@@ -1,0 +1,40 @@
+/opt/homebrew/lib/python3.10/site-packages/pypdf/_crypt_providers/_cryptography.py:32: CryptographyDeprecationWarning: ARC4 has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.ARC4 and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  from cryptography.hazmat.primitives.ciphers.algorithms import AES, ARC4
+[08/17/25 09:15:33] INFO     Anonymized telemetry enabled. See                                 posthog.py:20
+                             https://docs.trychroma.com/telemetry for more information.                     
+                    INFO     Load pretrained SentenceTransformer:                 SentenceTransformer.py:197
+                             BAAI/bge-small-en-v1.5                                                         
+  + Exception Group Traceback (most recent call last):
+  |   File "/Users/yuxinliu/Documents/rag-mcp/mcp_server/server.py", line 137, in <module>
+  |     mcp.run()
+  |   File "/opt/homebrew/lib/python3.10/site-packages/fastmcp/server.py", line 128, in run
+  |     asyncio.run(self.run_stdio_async())
+  |   File "/opt/homebrew/Cellar/python@3.10/3.10.17_1/Frameworks/Python.framework/Versions/3.10/lib/python3.10/asyncio/runners.py", line 44, in run
+  |     return loop.run_until_complete(main)
+  |   File "/opt/homebrew/Cellar/python@3.10/3.10.17_1/Frameworks/Python.framework/Versions/3.10/lib/python3.10/asyncio/base_events.py", line 649, in run_until_complete
+  |     return future.result()
+  |   File "/opt/homebrew/lib/python3.10/site-packages/fastmcp/server.py", line 421, in run_stdio_async
+  |     async with stdio_server() as (read_stream, write_stream):
+  |   File "/opt/homebrew/Cellar/python@3.10/3.10.17_1/Frameworks/Python.framework/Versions/3.10/lib/python3.10/contextlib.py", line 206, in __aexit__
+  |     await anext(self.gen)
+  |   File "/opt/homebrew/lib/python3.10/site-packages/mcp/server/stdio.py", line 87, in stdio_server
+  |     async with anyio.create_task_group() as tg:
+  |   File "/opt/homebrew/lib/python3.10/site-packages/anyio/_backends/_asyncio.py", line 767, in __aexit__
+  |     raise BaseExceptionGroup(
+  | exceptiongroup.ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "/opt/homebrew/lib/python3.10/site-packages/mcp/server/stdio.py", line 63, in stdin_reader
+    |     async for line in stdin:
+    |   File "/opt/homebrew/lib/python3.10/site-packages/anyio/_core/_fileio.py", line 80, in __aiter__
+    |     line = await self.readline()
+    |   File "/opt/homebrew/lib/python3.10/site-packages/anyio/_core/_fileio.py", line 96, in readline
+    |     return await to_thread.run_sync(self._fp.readline)
+    |   File "/opt/homebrew/lib/python3.10/site-packages/anyio/to_thread.py", line 56, in run_sync
+    |     return await get_async_backend().run_sync_in_worker_thread(
+    |   File "/opt/homebrew/lib/python3.10/site-packages/anyio/_backends/_asyncio.py", line 2461, in run_sync_in_worker_thread
+    |     return await future
+    |   File "/opt/homebrew/lib/python3.10/site-packages/anyio/_backends/_asyncio.py", line 962, in run
+    |     result = context.run(func, *args)
+    | OSError: [Errno 5] Input/output error
+    +------------------------------------

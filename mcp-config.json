@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "rag-mcp": {
+      "command": "python3",
+      "args": ["/Users/yuxinliu/Documents/rag-mcp/mcp_server/server.py"],
+      "env": {
+        "RAG_MCP_CHROMA_DIR": "/Users/yuxinliu/Documents/rag-mcp/.chroma",
+        "RAG_MCP_CHROMA_COLLECTION": "rag_collection",
+        "RAG_MCP_ENABLE_GENERATION": "0"
+      }
+    }
+  }
+}

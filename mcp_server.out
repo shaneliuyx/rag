@@ -1,0 +1,7 @@
+/opt/homebrew/lib/python3.10/site-packages/pypdf/_crypt_providers/_cryptography.py:32: CryptographyDeprecationWarning: ARC4 has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.ARC4 and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  from cryptography.hazmat.primitives.ciphers.algorithms import AES, ARC4
+[08/17/25 08:01:03] INFO     Anonymized telemetry enabled. See                                             posthog.py:20
+                             https://docs.trychroma.com/telemetry for more information.                                 
+                    INFO     Load pretrained SentenceTransformer: BAAI/bge-small-en-v1.5      SentenceTransformer.py:197
+/opt/homebrew/Cellar/python@3.10/3.10.17_1/Frameworks/Python.framework/Versions/3.10/lib/python3.10/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
