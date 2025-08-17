@@ -250,3 +250,65 @@ Status: Declared tunable parameters with defaults. Next: Security & privacy.
   - Explicit user action required for `rag.export`; file permissions respected.
 
 Status: Architecture expanded with complex planning, graders, and corrective loop; host-driven web search fallback documented. Next: Implementation.
+
+---
+
+## v2 Hybrid AWS (Bedrock) Addendum
+
+### Goals
+- Keep MCP server and LangGraph pipeline local and unchanged at the API level.
+- Enable config-only hybrid integration with AWS Bedrock for generation and retrieval.
+- Allow gradual rollout and easy fallback to purely local mode.
+
+### What changes in v2 (code-level, backward compatible)
+- LLM provider factory
+  - New `models/llm_provider.py` exposes `get_llm_generator(settings)`.
+  - New `models/llm_bedrock.py` implements a Bedrock generator via `bedrock-runtime.converse` with `boto3.Session(profile)`.
+  - `graph/nodes/synthesize.py` and `graph/nodes/decompose_llm.py` now select the generator through the factory.
+- Hybrid retrieval
+  - New `index/bedrock_kb_store.py` integrates Bedrock Knowledge Base (KB) retrieval via `bedrock-agent-runtime.retrieve`.
+  - `graph/nodes/multi_retrieve.py` optionally queries Bedrock KB alongside Chroma and fuses results with RRF.
+- Ingestion to Bedrock KB (optional)
+  - `index/ingest.py` adds `ingest_to_bedrock_kb()` to upload chunks to S3 and trigger `start_ingestion_job` for the configured KB/DataSource.
+  - `mcp_server/server.py` tool `rag.ingest` now returns a `bedrock_kb` summary when enabled.
+- AWS auth/profile
+  - `config/settings.py` adds `aws_profile`; all Bedrock clients use `boto3.Session(profile_name=..., region_name=...)` when provided.
+
+### Config flags (env)
+- Bedrock LLM
+  - `RAG_MCP_LLM_PROVIDER=bedrock`
+  - `RAG_MCP_BEDROCK_MODEL_ID` (e.g., `anthropic.claude-3-5-sonnet-20240620-v1:0`)
+  - `RAG_MCP_BEDROCK_REGION` (e.g., `us-west-2`)
+  - `RAG_MCP_AWS_PROFILE` (falls back to `AWS_PROFILE`)
+- Bedrock KB (retrieval)
+  - `RAG_MCP_USE_BEDROCK_KB=1`
+  - `RAG_MCP_BEDROCK_KB_ID=kb-...`
+  - Optional ingest path:
+    - `RAG_MCP_S3_BUCKET`, `RAG_MCP_S3_PREFIX` (default `rag/ingest`)
+    - `RAG_MCP_BEDROCK_KB_DS_ID=ds-...`
+    - `RAG_MCP_ENABLE_BEDROCK_KB_INGEST=1` (default on)
+- Optional rerank on Bedrock
+  - `RAG_MCP_USE_BEDROCK_RERANK=1`
+  - `RAG_MCP_BEDROCK_RERANK_MODEL_ID` (e.g., `cohere.rerank-v3.5`)
+
+### v2 Data Flow (hybrid)
+- Retrieve
+  - Local Chroma variants as before; if `RAG_MCP_USE_BEDROCK_KB=1`, also call Bedrock KB for the original query.
+  - Fuse with RRF; cap to `k_context`.
+- Generate
+  - If `RAG_MCP_LLM_PROVIDER=bedrock`, use Bedrock model via `converse`; otherwise follow local generator.
+  - Keep bullet + cite post-processing unchanged for consistent outputs.
+- Ingest
+  - Local add to Chroma remains; if S3/Kb configured, upload chunks and trigger KB ingestion job (async).
+
+### Deployment/Operations (v2 specifics)
+- Runtime remains local; only outbound calls to AWS Bedrock (runtime/agent-runtime/S3) when enabled.
+- Auth via AWS profile; minimal IAM: S3 put/list, `bedrock:InvokeModel`, `bedrock-agent-runtime:Retrieve`, and `bedrock-agent:StartIngestionJob` when using KB ingest.
+- Observability unchanged; optionally log Bedrock latency and source attribution (chroma vs kb) for analysis.
+
+### Safety/Cost
+- Feature flags gate all cloud usage. Default remains local-only.
+- Timeouts and retries added on Bedrock clients; extractive fallback remains available when generation disabled.
+
+### Migration
+- v1 → v2 requires no API changes. Set env flags to enable Bedrock LLM and/or KB. Remove flags to fully revert to v1 local behavior.
