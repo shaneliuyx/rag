@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Dict, Any, List
 from models.llm_provider import get_llm_generator
+from config.settings import settings
 
 
 def _yn(text: str) -> str:
@@ -14,7 +15,6 @@ def _yn(text: str) -> str:
 
 
 def grade_doc_relevance(question: str, document: str) -> Dict[str, Any]:
-    from config.settings import settings
     prompt = (
         "You are a grader assessing relevance of a retrieved document to a user question.\n"
         "Answer strictly with 'yes' or 'no'.\n\n"
@@ -27,7 +27,6 @@ def grade_doc_relevance(question: str, document: str) -> Dict[str, Any]:
 
 
 def grade_generation_grounded(question: str, documents: List[str], generation: str) -> Dict[str, Any]:
-    from config.settings import settings
     joined = "\n\n".join(d[:1200] for d in documents[:6])
     prompt = (
         "You are a grader assessing whether an LLM generation is grounded in the set of retrieved facts.\n"
@@ -41,7 +40,6 @@ def grade_generation_grounded(question: str, documents: List[str], generation: s
 
 
 def grade_answer_addresses(question: str, generation: str) -> Dict[str, Any]:
-    from config.settings import settings
     prompt = (
         "You are a grader assessing whether an answer resolves the user question.\n"
         "Answer strictly with 'yes' or 'no'.\n\n"
