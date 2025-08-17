@@ -62,7 +62,8 @@ def rag_ingest(req: Dict[str, Any]) -> Dict[str, Any]:
         for i, t in enumerate(validated_req.texts):
             ids.append(f"text:{i}")
             docs.append(t)
-            metas.append({"tags": validated_req.tags or []})
+            tag_csv = ",".join(validated_req.tags) if validated_req.tags else ""
+            metas.append({"tags": tag_csv})
 
     if validated_req.paths:
         file_ids, file_docs, file_metas = load_and_chunk(validated_req.paths, tags=validated_req.tags)

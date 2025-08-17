@@ -10,6 +10,7 @@ from graph.nodes.decompose import QueryDecomposer
 from graph.nodes.decompose_llm import LLMDecomposer
 from graph.nodes.selfrag import selfrag_checks
 from graph.nodes.grade import grade_hallucination, grade_relevance
+from graph.nodes.llm_graders import grade_doc_relevance, grade_generation_grounded, grade_answer_addresses
 from graph.nodes.corrective import CorrectiveRAG
 
 
@@ -123,11 +124,29 @@ class GraphPipeline:
         def run_once(q: str, tk: int):
             # Simple path
             h = self.retrieve(q)
+            # Optional LLM-based retrieval grading (pre-filter)
+            from config.settings import settings
+            if getattr(settings, "enable_retrieval_grader", False):
+                filtered: list[dict[str, Any]] = []
+                for hit in h:
+                    gd = grade_doc_relevance(q, hit.get("text", ""))
+                    if gd.get("binary_score") == "yes":
+                        filtered.append(hit)
+                h = filtered or h
             rr = self.rerank(q, h)[:tk]
             sy = self.synthesize(q, rr)
             sr = selfrag_checks(sy.get("answer", ""), rr, q)
-            gh = grade_hallucination(sy.get("answer", ""), rr, q)
-            gr = grade_relevance(sy.get("answer", ""), q)
+            # Optional LLM-based post graders
+            if getattr(settings, "enable_hallucination_grader", False):
+                gg = grade_generation_grounded(q, [h.get("text", "") for h in rr], sy.get("answer", ""))
+                gh = {"score": 1.0 if gg.get("binary_score") == "yes" else 0.0, "pass": gg.get("binary_score") == "yes", "raw": gg}
+            else:
+                gh = grade_hallucination(sy.get("answer", ""), rr, q)
+            if getattr(settings, "enable_answer_grader", False):
+                ga = grade_answer_addresses(q, sy.get("answer", ""))
+                gr = {"score": 1.0 if ga.get("binary_score") == "yes" else 0.0, "pass": ga.get("binary_score") == "yes", "raw": ga}
+            else:
+                gr = grade_relevance(sy.get("answer", ""), q)
             return {"hits": rr, "answer": sy.get("answer", ""), "selfrag": sr, "grade_hallucination": gh, "grade_relevance": gr}
 
         # Choose execution mode
