@@ -301,6 +301,55 @@ Status: Architecture expanded with complex planning, graders, and corrective loo
 - Ingest
   - Local add to Chroma remains; if S3/Kb configured, upload chunks and trigger KB ingestion job (async).
 
+### Architecture Diagram (v2 Hybrid)
+```mermaid
+flowchart TD
+  H["MCP Host (VS Code / Cursor / Claude / Windsurf)"] -->|tools.invoke| S["RAG MCP Server"]
+
+  subgraph Server
+    S --> GI["Graph Ingress (LangGraph)"]
+    GI --> PP["Preprocess & Normalize"]
+    PP --> CD{Complexity Decider}
+    CD -->|Simple| SP["Single-Query Path"]
+    CD -->|Complex| QD["Query Decomposition (Heuristic + LLM)"]
+    QD --> L1["Topological Sub-Query Execution"]
+
+    SP --> RETR["Retriever (Multi-variant)"]
+    L1 --> RETR
+
+    %% Hybrid retrieval: local Chroma + Bedrock KB
+    RETR -->|local| CHR["ChromaDB (Collections)"]
+    RETR -->|optional| KB[("Bedrock Knowledge Base")]
+    KB <-->|retrieve| AR["Bedrock Agent Runtime"]
+
+    CHR --> RER["Reranker (local cross-encoder or Bedrock Rerank)"]
+    KB --> RER
+    RER --> SYN["Synthesis (bullets + cites)"]
+
+    %% LLM Provider Factory
+    SYN --> LLM["Provider Factory\n(Bedrock Converse or Local)"]
+    LLM --> SYN
+
+    SYN --> SR{Self-RAG Checks + Graders}
+    SR -->|faithful + grounded| FIN["Finalize Answer + Citations"]
+    SR -->|low confidence| COR["Corrective RAG"]
+    COR --> RETR
+
+    FIN --> S
+  end
+
+  %% Ingestion
+  ING["Ingestion Pipeline (Loaders + Chunker)"] --> CHR
+  ING -->|optional S3| S3[("Amazon S3")]
+  S3 --> AG["Bedrock Agent (KB Ingestion)"]
+  AG -->|StartIngestionJob| KB
+
+  %% Auth/Config context
+  CFG["Config Flags\n- LLM_PROVIDER=bedrock\n- USE_BEDROCK_KB=1\n- AWS_PROFILE, REGION"] --- S
+
+  S -->|tools: ingest/query/status| H
+```
+
 ### Deployment/Operations (v2 specifics)
 - Runtime remains local; only outbound calls to AWS Bedrock (runtime/agent-runtime/S3) when enabled.
 - Auth via AWS profile; minimal IAM: S3 put/list, `bedrock:InvokeModel`, `bedrock-agent-runtime:Retrieve`, and `bedrock-agent:StartIngestionJob` when using KB ingest.
